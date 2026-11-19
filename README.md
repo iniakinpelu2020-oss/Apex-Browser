@@ -1,41 +1,43 @@
 # Apex Browser
 
-A browser shell for Android and desktop, with the rest of the suite built into it.
+A browser shell for the suite.
 
-**Status: not built. This is the largest item in the plan, by a wide margin.**
+**Status: the "reading shell" this README recommended building first is built and working.**
+The Android browser (WebView or GeckoView) is still a decision you have to make, and it is
+still the largest item in the plan.
 
-## The choice you have to make first
+## What is built
 
-There are two ways to build an Android browser and they are not close:
+`index.html` is a dark, installable reading shell:
 
-| | WebView | GeckoView |
-| --- | --- | --- |
-| Ships with Android | Yes | Extra ~50 MB per app |
-| Ad blocking | Only by intercepting requests one at a time; no cosmetic filtering, slow | Real extensions, so uBlock Origin itself |
-| Page engine | Chrome's, controlled by Google | Mozilla's, independent |
-| Effort | An afternooon to start | Weeks just to make it stable |
+- **URL bar** that also takes search words. A bare domain opens as a page; anything else
+  goes to a search engine you can change in `localStorage["apex-browser-search"]`
+  (default DuckDuckGo; point it at your SearXNG base to keep searches private).
+- **Back, forward, reload, home**, with the trail kept in memory for the session.
+- **Pins** — the star keeps a page on the home grid, stored in this browser.
+- **Recent** — last 50 pages you opened.
+- **Honest fallback:** many sites send `X-Frame-Options: DENY` and will not render inside
+  another page. The shell says so straight away and gives you **Open in a new tab**
+  instead of showing a silent blank box.
 
-If ad blocking is the reason for this product, WebView will disappoint you. Honest
-ad blocking needs GeckoView and a bundled extension, and that carries its own maintenance
-burden forever.
+## What it is not
 
-The desktop version is a separate codebase again (Tauri 2 wraps the system webview), so
-"Android and desktop browser" is really two projects.
+It is not a browser engine. It cannot block ads, run extensions, keep tabs, download files
+through Apex-Shield, or share history with Apex-Archive yet. Those need the Android shell
+(GeckoView if ad blocking matters, WebView if it does not) and a desktop build with Tauri.
 
-## What I would build first instead
+## Run it
 
-A **reading shell**, not a browser: a page that takes a URL, renders it with your
-`Apex Search` bar, and saves it to `Apex-Archive`. No tabs, no engine, no extension
-system. That is a weekend, it is genuinely useful, and it tells you whether you actually
-want the harder thing.
+```sh
+python3 -m http.server 8080
+```
 
-## What you need to do
+Static files only. Deploy to Cloudflare Pages as-is; `_headers` already sets the CSP and
+allows framing of remote pages.
 
-1. Decide WebView or GeckoView. Nothing else can start until that is settled.
-2. Decide whether the desktop half is in scope at all.
+## Next steps, in order
 
-## First three steps
-
-1. GeckoView with one bundled ad-blocking extension, loading a single page.
-2. Downloads routed through `Apex-Shield` (which must exist first).
-3. Bookmarks and history stored in Firestore, shared with `Apex-Archive`.
+1. Decide WebView or GeckoView. Nothing on the Android side can start before that.
+2. Route **★** into `Apex-Archive` (Firestore bookmark document) instead of `localStorage`.
+3. Downloads through `Apex-Shield`, once that exists.
+4. Reading mode: strip a fetched article to text and store it with the bookmark.

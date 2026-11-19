@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Apex Browser">
+  <rect width="512" height="512" rx="112" fill="#0b0d10"/>
+  <circle cx="256" cy="256" r="140" fill="none" stroke="#60a5fa" stroke-width="26"/>
+  <path d="M116 256h280M256 116c46 38 46 242 0 280M256 116c-46 38-46 242 0 280" fill="none" stroke="#60a5fa" stroke-width="18"/>
+</svg>

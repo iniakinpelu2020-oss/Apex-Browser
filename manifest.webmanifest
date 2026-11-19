@@ -1,0 +1,13 @@
+{
+  "name": "Apex Browser",
+  "short_name": "Apex",
+  "description": "A reading shell for the Apex suite: a URL bar, pins and history.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0b0d10",
+  "theme_color": "#0b0d10",
+  "icons": [
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
