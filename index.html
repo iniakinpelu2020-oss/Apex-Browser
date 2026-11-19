@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Apex Browser</title>
+<meta name="theme-color" content="#0b0d10">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<style>
+  :root{--bg:#0b0d10;--panel:#12161c;--panel2:#171d25;--line:#242c37;--text:#e7edf5;--muted:#8b98a9;--accent:#60a5fa}
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--text);font:14.5px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:flex;flex-direction:column}
+  .bar{display:flex;gap:8px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line);background:#0e1218}
+  .bar button{background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:9px;width:34px;height:34px;display:grid;place-items:center;cursor:pointer;padding:0;font-size:15px}
+  .bar button:hover{border-color:#3a4655}
+  .bar button:disabled{opacity:.35;cursor:default}
+  .addr{flex:1;display:flex;align-items:center;gap:8px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:0 6px 0 12px;height:34px}
+  .addr:focus-within{border-color:#2d4a72;box-shadow:0 0 0 3px #60a5fa1f}
+  .addr input{flex:1;background:transparent;border:0;outline:none;color:var(--text);font:inherit;min-width:0}
+  .addr .go{background:var(--accent);color:#07172b;border:0;border-radius:7px;height:26px;padding:0 12px;font-weight:600;cursor:pointer}
+  .star{color:var(--muted)}
+  .star.on{color:#fbbf24}
+  .note{padding:8px 14px;background:#1d1512;border-bottom:1px solid #4a2f22;color:#f0c9a8;font-size:12.5px;display:flex;gap:10px;align-items:center}
+  .note a{color:#f0a96f}
+  .note button{margin-left:auto;background:transparent;border:1px solid #5a3b2a;color:#f0c9a8;border-radius:7px;padding:4px 10px;cursor:pointer;font:inherit;font-size:12px}
+  main{flex:1;position:relative;overflow:auto}
+  iframe{width:100%;height:100%;border:0;background:#0b0d10;display:block}
+  .home{padding:28px;max-width:960px;margin:0 auto}
+  .home h1{font-size:20px;margin:0 0 6px}
+  .home p.sub{margin:0 0 22px;color:var(--muted);font-size:13.5px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}
+  .tile{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;text-decoration:none;color:var(--text);display:block;position:relative}
+  .tile:hover{border-color:#33507a}
+  .tile strong{display:block;font-size:14px;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tile span{font-size:12px;color:var(--muted);word-break:break-all}
+  .tile .x{position:absolute;top:8px;right:8px;background:transparent;border:0;color:var(--muted);cursor:pointer;font-size:14px;line-height:1;padding:2px}
+  .empty{border:1px dashed var(--line);border-radius:12px;padding:26px;text-align:center;color:var(--muted);font-size:13.5px}
+  section.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-top:22px}
+  section.card h2{font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:0 0 10px;font-weight:600}
+  ul.plain{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+  ul.plain li{display:flex;gap:10px;align-items:center;font-size:13px;color:var(--text);border-bottom:1px solid #1b222b;padding-bottom:8px}
+  ul.plain li:last-child{border-bottom:0;padding-bottom:0}
+  ul.plain li span{color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  ul.plain li button{margin-left:auto;background:transparent;border:1px solid var(--line);color:var(--text);border-radius:7px;padding:3px 9px;font-size:12px;cursor:pointer}
+  .formats{color:var(--muted);font-size:12px;margin-top:14px}
+  .formats a{color:var(--accent)}
+</style>
+</head>
+<body>
+  <div class="bar">
+    <button id="back" title="Back" aria-label="Back">‹</button>
+    <button id="fwd" title="Forward" aria-label="Forward">›</button>
+    <button id="reload" title="Reload" aria-label="Reload">⟳</button>
+    <button id="home" title="Home" aria-label="Home">⌂</button>
+    <div class="addr">
+      <input id="url" placeholder="Paste a link, or type words to search" spellcheck="false" autocomplete="off">
+      <button class="go" id="go">Go</button>
+    </div>
+    <button class="star" id="pin" title="Pin this page" aria-label="Pin this page">★</button>
+  </div>
+
+  <div class="note" id="note" hidden>
+    <span id="noteText">Blank page? Many sites refuse to be shown inside another page.</span>
+    <button id="openExternal">Open in a new tab</button>
+  </div>
+
+  <main>
+    <div class="home" id="homeView">
+      <h1>Reading shell</h1>
+      <p class="sub">A page that takes a URL, keeps what you pin, and gets out of the way.
+        No tabs, no engine, no extension system — that is the honest first step before a real browser.</p>
+      <div id="pins"></div>
+      <section class="card">
+        <h2>Recent</h2>
+        <ul class="plain" id="recent"><li><span>Nothing read yet.</span></li></ul>
+      </section>
+      <p class="formats">Pins and history live in this browser only. Clearing site data clears them.
+        Send a link on to <a href="https://github.com/iniakinpelu2020-oss/Apex-Archive" target="_blank" rel="noopener">Apex Archive</a>
+        with the ☆ button, then copy it there.</p>
+    </div>
+    <iframe id="frame" hidden referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+  </main>
+
+<script type="module">
+const $ = (id) => document.getElementById(id);
+const LS = { pins: "apex-browser-pins", history: "apex-browser-history", search: "apex-browser-search" };
+const frame = $("frame");
+let trail = [];
+let cursor = -1;
+
+const read = (key, fallback) => {
+  try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch { return fallback; }
+};
+const write = (key, value) => {
+  try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
+};
+
+function toUrl(input) {
+  const text = input.trim();
+  if (!text) return null;
+  if (/^https?:\/\//i.test(text)) return text;
+  if (/^[\w-]+(\.[\w-]+)+(\/\S*)?$/.test(text)) return "https://" + text;
+  const base = localStorage.getItem(LS.search) || "https://duckduckgo.com/?q=";
+  return base + encodeURIComponent(text);
+}
+
+function hostOf(url) {
+  try { return new URL(url).host.replace(/^www\./, ""); } catch { return url; }
+}
+
+function showHome() {
+  $("note").hidden = true;
+  frame.hidden = true;
+  frame.removeAttribute("src");
+  $("homeView").hidden = false;
+  $("url").value = "";
+  paintHome();
+}
+
+function paintHome() {
+  const pins = read(LS.pins, []);
+  const box = $("pins");
+  box.innerHTML = "";
+  if (!pins.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty";
+    empty.textContent = "No pins yet. Open a page, then press ★ to keep it here.";
+    box.append(empty);
+  } else {
+    const grid = document.createElement("div");
+    grid.className = "grid";
+    for (const pin of pins) {
+      const tile = document.createElement("a");
+      tile.className = "tile";
+      tile.href = pin.url;
+      tile.onclick = (event) => { event.preventDefault(); navigate(pin.url); };
+      const strong = document.createElement("strong");
+      strong.textContent = pin.title || hostOf(pin.url);
+      const span = document.createElement("span");
+      span.textContent = hostOf(pin.url);
+      const x = document.createElement("button");
+      x.className = "x";
+      x.textContent = "✕";
+      x.title = "Unpin";
+      x.onclick = (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        write(LS.pins, read(LS.pins, []).filter((item) => item.url !== pin.url));
+        paintHome();
+      };
+      tile.append(strong, span, x);
+      grid.append(tile);
+    }
+    box.append(grid);
+  }
+
+  const recent = $("recent");
+  recent.innerHTML = "";
+  const history = read(LS.history, []).slice(0, 8);
+  if (!history.length) {
+    const li = document.createElement("li");
+    li.innerHTML = "<span>Nothing read yet.</span>";
+    recent.append(li);
+    return;
+  }
+  for (const entry of history) {
+    const li = document.createElement("li");
+    const button = document.createElement("button");
+    button.textContent = "Open";
+    button.onclick = () => navigate(entry.url);
+    const title = document.createElement("div");
+    title.textContent = entry.title || hostOf(entry.url);
+    title.style.cssText = "min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap";
+    const host = document.createElement("span");
+    host.textContent = hostOf(entry.url);
+    li.append(title, host, button);
+    recent.append(li);
+  }
+}
+
+function remember(url, title) {
+  const history = read(LS.history, []).filter((item) => item.url !== url);
+  history.unshift({ url, title, at: Date.now() });
+  write(LS.history, history.slice(0, 50));
+}
+
+function paintPin() {
+  const url = trail[cursor];
+  const pinned = url && read(LS.pins, []).some((item) => item.url === url);
+  $("pin").classList.toggle("on", Boolean(pinned));
+  $("back").disabled = cursor <= 0;
+  $("fwd").disabled = cursor >= trail.length - 1;
+}
+
+function navigate(url, { push = true } = {}) {
+  $("homeView").hidden = true;
+  frame.hidden = false;
+  frame.src = url;
+  $("url").value = url;
+  if (push) {
+    trail = trail.slice(0, cursor + 1);
+    trail.push(url);
+    cursor = trail.length - 1;
+  }
+  $("note").hidden = false;
+  $("noteText").textContent = `Showing ${hostOf(url)} inside the shell. If it stays blank, the site refuses to be framed.`;
+  remember(url, hostOf(url));
+  paintPin();
+}
+
+function go() {
+  const url = toUrl($("url").value);
+  if (!url) return;
+  navigate(url);
+}
+
+$("go").onclick = go;
+$("url").addEventListener("keydown", (event) => { if (event.key === "Enter") go(); });
+$("home").onclick = showHome;
+$("reload").onclick = () => { if (frame.src) frame.src = frame.src; };
+$("back").onclick = () => { if (cursor > 0) { cursor--; navigate(trail[cursor], { push: false }); } };
+$("fwd").onclick = () => { if (cursor < trail.length - 1) { cursor++; navigate(trail[cursor], { push: false }); } };
+$("openExternal").onclick = () => {
+  const url = trail[cursor];
+  if (url) window.open(url, "_blank", "noopener");
+};
+
+$("pin").onclick = () => {
+  const url = trail[cursor];
+  if (!url) return;
+  const pins = read(LS.pins, []);
+  const existing = pins.findIndex((item) => item.url === url);
+  if (existing >= 0) pins.splice(existing, 1);
+  else pins.unshift({ url, title: hostOf(url), at: Date.now() });
+  write(LS.pins, pins);
+  paintPin();
+  paintHome();
+};
+
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("sw.js").catch(() => {});
+}
+
+paintHome();
+paintPin();
+</script>
+</body>
+</html>
